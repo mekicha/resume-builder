@@ -8,11 +8,12 @@ A local-first resume/CV builder inspired by FlowCV and Resume.io.
   - Choose from multiple templates
   - Edit resume content in structured forms
   - Live visual preview
-  - Save resume to backend
+  - Recover the local draft after refresh
+  - Save and reopen resumes by ID
   - Export ATS-friendly PDF
 - **Backend**: FastAPI service
   - Template catalog endpoint
-  - Resume CRUD endpoints (file-backed JSON storage)
+  - Resume create/read/update endpoints with atomic JSON file storage
   - PDF export endpoint using ReportLab (text-first ATS-friendly output)
 
 ---
@@ -45,13 +46,13 @@ In this project, “ATS-safe” means templates avoid layouts that break parsing
 
 ## Planned roadmap
 
-### Phase 1 (current scaffold)
-1. Template selection and local editing UX
-2. Save/load a resume from backend
-3. Export ATS-oriented PDF with automatic page continuation (multi-page by default)
+### Shipped foundation
+1. Template selection, multiple entries, and live preview
+2. Local draft recovery plus save/open by backend resume ID
+3. ATS-oriented PDF export with wrapping and automatic page continuation
 
 ### Phase 2
-1. Multiple entries per section and drag-and-drop ordering
+1. Drag-and-drop section/entry ordering
 2. Better validation and inline form helpers
 3. Better template-specific styling controls
 
@@ -77,13 +78,45 @@ uvicorn app.main:app --reload --port 8000
 ### Frontend
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
 Open http://localhost:5173
 
-## Frontend checks
+## Saving, reopening, and export
+
+Edits are automatically kept in this browser's local storage. Refresh restores the
+latest draft and its backend resume ID. This is one draft per browser; saving to
+the backend is a separate action. The status indicates when edits are still unsaved.
+
+Copy the resume ID after saving and use **Open Resume** to reopen that file,
+including from a different browser on this machine. Opening replaces the current
+local draft. Failed loads leave the current content intact.
+
+Save and Export cannot overlap. The editor remains usable while a save runs;
+edits made after clicking Save remain unsaved. Export first persists the snapshot
+that existed when clicked, then downloads its PDF. Further edits are kept for the
+next save/export.
+
+Classic exports use a neutral single-column layout, Modern adds blue headings,
+and Compact uses smaller typography and spacing. All export text remains
+extractable. The on-screen preview is an approximation of the PDF.
+
+## Configuration
+
+Vite development and preview servers proxy `/api` to `http://127.0.0.1:8000`, so the
+frontend works on both `localhost` and `127.0.0.1`. For another backend, set
+`VITE_API_BASE_URL` before starting/building the frontend. A separately served
+production build needs a reverse proxy for `/api` or this explicit API URL.
+
+The backend accepts UUID resume IDs and only the three listed template IDs.
+Updating an unknown ID returns 404. Set `RESUME_DATA_DIR` to choose a different
+storage directory; otherwise JSON files live in `backend/data/resumes/`.
+
+## Checks
+
+Frontend:
 
 ```bash
 cd frontend
@@ -92,7 +125,22 @@ npm test
 npm run build
 ```
 
-The Vitest/React Testing Library tests cover saving current form data before PDF
-export (including failed saves) and preserving comma/newline skills entry while
-keeping the parsed skills and external replacements in sync. API calls and the
-browser download are mocked; these are frontend regression tests.
+Backend (after activating the virtual environment):
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+Frontend tests cover export ordering, recovery, reopening, pending actions,
+API configuration, and skills/highlight/date editing. API calls and downloads
+are mocked in component tests. Backend tests exercise real HTTP endpoints via
+FastAPI's test client, isolate storage in temporary directories, validate PDF
+text and pagination, and simulate interrupted writes.
+
+For an additional live HTTP check, install the backend development requirements
+in `backend/.venv`, then run `npm run test:integration` from `frontend/`. It starts
+isolated FastAPI/Vite servers, checks create/update/reopen through the frontend
+proxy, and verifies that the exported PDF contains the edited text. `PYTHON_BIN`
+can point to another Python environment with those dependencies installed.

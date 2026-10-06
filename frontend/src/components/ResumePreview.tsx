@@ -15,7 +15,7 @@ export function ResumePreview({ data }: Props) {
         </p>
 
         <h3>Summary</h3>
-        <p>{data.summary || 'Your summary will appear here.'}</p>
+        <p className="summary-text">{data.summary || 'Your summary will appear here.'}</p>
 
         <h3>Skills</h3>
         <p>{data.skills.length ? data.skills.join(', ') : 'Add skills to preview them here.'}</p>

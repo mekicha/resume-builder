@@ -1,4 +1,5 @@
 import uuid
+from uuid import UUID
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,10 @@ app = FastAPI(title="Resume Builder API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173", "http://127.0.0.1:5173",
+        "http://localhost:4173", "http://127.0.0.1:4173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,21 +41,23 @@ def create_resume(data: ResumeData) -> ResumeRecord:
 
 
 @app.get("/resumes/{resume_id}", response_model=ResumeRecord)
-def fetch_resume(resume_id: str) -> ResumeRecord:
-    record = get_resume(resume_id)
+def fetch_resume(resume_id: UUID) -> ResumeRecord:
+    record = get_resume(str(resume_id))
     if not record:
         raise HTTPException(status_code=404, detail="Resume not found")
     return record
 
 
 @app.put("/resumes/{resume_id}", response_model=ResumeRecord)
-def update_resume(resume_id: str, data: ResumeData) -> ResumeRecord:
-    return save_resume(resume_id, data)
+def update_resume(resume_id: UUID, data: ResumeData) -> ResumeRecord:
+    if not get_resume(str(resume_id)):
+        raise HTTPException(status_code=404, detail="Resume not found")
+    return save_resume(str(resume_id), data)
 
 
 @app.post("/resumes/{resume_id}/export/pdf")
-def export_resume_pdf(resume_id: str) -> Response:
-    record = get_resume(resume_id)
+def export_resume_pdf(resume_id: UUID) -> Response:
+    record = get_resume(str(resume_id))
     if not record:
         raise HTTPException(status_code=404, detail="Resume not found")
 

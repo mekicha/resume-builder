@@ -16,6 +16,7 @@ export function TemplateSelector({ templates, selectedTemplate, onSelect }: Prop
             key={template.id}
             className={`template-card ${selectedTemplate === template.id ? 'active' : ''}`}
             onClick={() => onSelect(template.id)}
+            aria-pressed={selectedTemplate === template.id}
             type="button"
           >
             <h3>{template.name}</h3>

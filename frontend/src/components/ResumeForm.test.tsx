@@ -17,11 +17,13 @@ function renderControlledForm() {
       // Echo a fresh array as a controlled parent may do when saving/loading data.
       setValue({ ...next, skills: [...next.skills] });
     }
-    return <>
-      <ResumeForm value={value} onChange={handleChange} />
-      <button onClick={() => setValue({ ...value, skills: ['Go', 'Rust'] })}>Load skills</button>
-      <button onClick={() => setValue({ ...value, skills: [] })}>Clear skills</button>
-    </>;
+    return (
+      <>
+        <ResumeForm value={value} onChange={handleChange} />
+        <button onClick={() => setValue({ ...value, skills: ['Go', 'Rust'] })}>Load skills</button>
+        <button onClick={() => setValue({ ...value, skills: [] })}>Clear skills</button>
+      </>
+    );
   }
   render(<ControlledForm />);
   return {
@@ -35,21 +37,24 @@ describe('skills entry', () => {
   it.each([
     { separator: ', ', keys: ', ', name: 'comma' },
     { separator: '\n', keys: '{Enter}', name: 'newline' },
-  ])('preserves a trailing $name and partial skills during character-by-character entry', async ({ separator, keys }) => {
-    const { user, input, onChange } = renderControlledForm();
-    await user.type(input, `TypeScript${keys}`);
-    expect(input.value).toBe(`TypeScript${separator}`);
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ skills: ['TypeScript'] }));
+  ])(
+    'preserves a trailing $name and partial skills during character-by-character entry',
+    async ({ separator, keys }) => {
+      const { user, input, onChange } = renderControlledForm();
+      await user.type(input, `TypeScript${keys}`);
+      expect(input.value).toBe(`TypeScript${separator}`);
+      expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ skills: ['TypeScript'] }));
 
-    await user.type(input, 'Rea');
-    expect(input.value).toBe(`TypeScript${separator}Rea`);
-    await user.type(input, 'ct');
-    expect(input.value).toBe(`TypeScript${separator}React`);
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ skills: ['TypeScript', 'React'] }));
+      await user.type(input, 'Rea');
+      expect(input.value).toBe(`TypeScript${separator}Rea`);
+      await user.type(input, 'ct');
+      expect(input.value).toBe(`TypeScript${separator}React`);
+      expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ skills: ['TypeScript', 'React'] }));
 
-    await user.type(screen.getByPlaceholderText('Full name'), 'Ada');
-    expect(input.value).toBe(`TypeScript${separator}React`);
-  });
+      await user.type(screen.getByPlaceholderText('Full name'), 'Ada');
+      expect(input.value).toBe(`TypeScript${separator}React`);
+    },
+  );
 
   it('keeps pasted text intact while parsing mixed separators, whitespace, and empty entries', async () => {
     const { user, input, onChange } = renderControlledForm();
@@ -71,5 +76,35 @@ describe('skills entry', () => {
     expect(input.value).toBe('Go, Rust');
     await user.click(screen.getByRole('button', { name: 'Clear skills' }));
     expect(input.value).toBe('');
+  });
+});
+
+describe('repeatable resume sections', () => {
+  it('preserves newlines while entering multiple experience highlights', async () => {
+    const { user, onChange } = renderControlledForm();
+    await user.click(screen.getByRole('button', { name: '+ Add Experience' }));
+    const input = screen.getByLabelText('Experience 1 highlights (one per line)') as HTMLTextAreaElement;
+    await user.type(input, 'First achievement{Enter}');
+    expect(input.value).toBe('First achievement\n');
+    await user.type(input, 'Second achievement');
+    expect(input.value).toBe('First achievement\nSecond achievement');
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        experience: [expect.objectContaining({ highlights: ['First achievement', 'Second achievement'] })],
+      }),
+    );
+  });
+
+  it('lets education start and end dates be typed independently without rewriting either', async () => {
+    const { user, onChange } = renderControlledForm();
+    await user.click(screen.getByRole('button', { name: '+ Add Education' }));
+    await user.type(screen.getByLabelText('Education start date'), '2020-09');
+    await user.type(screen.getByLabelText('Education end date'), '2024-06');
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        education: [expect.objectContaining({ start_date: '2020-09', end_date: '2024-06' })],
+      }),
+    );
+    expect((screen.getByLabelText('Education start date') as HTMLInputElement).value).toBe('2020-09');
   });
 });
