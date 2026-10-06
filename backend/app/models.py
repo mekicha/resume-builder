@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 from pydantic import BaseModel, Field
 
 
@@ -33,7 +33,7 @@ class CertificationItem(BaseModel):
 
 
 class ResumeData(BaseModel):
-    template_id: str = "classic"
+    template_id: Literal["classic", "modern", "compact"] = "classic"
     basics: Basics = Field(default_factory=Basics)
     summary: str = ""
     experience: List[ExperienceItem] = Field(default_factory=list)

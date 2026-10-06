@@ -8,14 +8,15 @@ type Props = {
 
 export function TemplateSelector({ templates, selectedTemplate, onSelect }: Props) {
   return (
-    <section>
-      <h2>1) Choose Template</h2>
+    <section className="panel">
+      <h2>Template</h2>
       <div className="template-grid">
         {templates.map((template) => (
           <button
             key={template.id}
             className={`template-card ${selectedTemplate === template.id ? 'active' : ''}`}
             onClick={() => onSelect(template.id)}
+            aria-pressed={selectedTemplate === template.id}
             type="button"
           >
             <h3>{template.name}</h3>
