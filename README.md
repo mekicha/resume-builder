@@ -83,3 +83,16 @@ npm run dev
 
 Open http://localhost:5173
 
+## Frontend checks
+
+```bash
+cd frontend
+npm ci
+npm test
+npm run build
+```
+
+The Vitest/React Testing Library tests cover saving current form data before PDF
+export (including failed saves) and preserving comma/newline skills entry while
+keeping the parsed skills and external replacements in sync. API calls and the
+browser download are mocked; these are frontend regression tests.

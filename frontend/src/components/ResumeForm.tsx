@@ -10,8 +10,13 @@ export function ResumeForm({ value, onChange }: Props) {
   const [skillsText, setSkillsText] = useState(value.skills.join(', '));
 
   useEffect(() => {
-    setSkillsText(value.skills.join(', '));
-  }, [value.skills]);
+    const draftSkills = parseSkills(skillsText);
+    // Preserve separators and whitespace when the parent echoes our parsed draft.
+    // Only replace the text when the incoming skills actually differ.
+    if (draftSkills.length !== value.skills.length || draftSkills.some((skill, index) => skill !== value.skills[index])) {
+      setSkillsText(value.skills.join(', '));
+    }
+  }, [value.skills, skillsText]);
 
   function updateExperience(index: number, patch: Partial<ExperienceItem>) {
     const next = value.experience.map((item, idx) => (idx === index ? { ...item, ...patch } : item));
@@ -75,10 +80,7 @@ export function ResumeForm({ value, onChange }: Props) {
           setSkillsText(nextText);
           onChange({
             ...value,
-            skills: nextText
-              .split(/[\n,]/)
-              .map((s) => s.trim())
-              .filter(Boolean),
+            skills: parseSkills(nextText),
           });
         }}
       />
@@ -218,6 +220,10 @@ export function ResumeForm({ value, onChange }: Props) {
       ))}
     </section>
   );
+}
+
+function parseSkills(text: string): string[] {
+  return text.split(/[\n,]/).map((skill) => skill.trim()).filter(Boolean);
 }
 
 const defaultExperience: ExperienceItem = {

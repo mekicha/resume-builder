@@ -51,9 +51,8 @@ export default function App() {
 
   async function downloadPdf() {
     try {
-      const id = resumeId ?? (await saveResume());
+      const id = await saveResume();
       if (!id) {
-        setStatus('Please save first');
         return;
       }
       setStatus('Preparing PDF...');
